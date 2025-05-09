@@ -14,12 +14,6 @@ dist-electron
 *.local
 # Release files
 release/*/**
-# !release/*/*.yml
-# !release/*/*.zip
-# !release/*/*.blockmap
-# !release/*/*.dmg
-# Editor directories and files
-.vscode/.debug.env
 .idea
 .DS_Store
 *.suo
@@ -35,3 +29,8 @@ yarn.lock
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# Environment variables
+.env
+.env.local
+.env.*.local

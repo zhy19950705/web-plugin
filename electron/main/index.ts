@@ -125,11 +125,33 @@ function createTray() {
   // 添加右键菜单
   const contextMenu = Menu.buildFromTemplate([
     {
+      label: `当前版本: ${app.getVersion()}(检查更新)`,
+      click: () => {
+        // 打开 GitHub 仓库的 releases 页面
+        const repoUrl = 'https://github.com/zhy19950705/web-plugin/releases';
+        shell.openExternal(repoUrl);
+      }
+    },
+    {
+      label: '打开开发者工具',
+      click: () => {
+        if (win) {
+          win.webContents.openDevTools();
+          // 调整窗口宽度为1500
+          const bounds = win.getBounds();
+          win.setBounds({
+            ...bounds,
+            width: 1500
+          });
+        }
+      }
+    },
+    {
       label: '退出',
       click: () => {
         app.quit();
       }
-    }
+    },
   ]);
 
   // 为 macOS 优化的点击处理
