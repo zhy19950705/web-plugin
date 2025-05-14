@@ -44,6 +44,36 @@ if (!app.requestSingleInstanceLock()) {
   app.quit()
   process.exit(0)
 }
+function getContextMenu() {
+  return Menu.buildFromTemplate([
+    {
+      label: `当前版本: ${app.getVersion()}(点击获取最新版本)`,
+      click: () => {
+        const repoUrl = 'https://github.com/zhy19950705/web-plugin/releases';
+        shell.openExternal(repoUrl);
+      }
+    },
+    {
+      label: '打开开发者工具',
+      click: () => {
+        if (win) {
+          win.webContents.openDevTools();
+          const bounds = win.getBounds();
+          win.setBounds({
+            ...bounds,
+            width: 1500
+          });
+        }
+      }
+    },
+    {
+      label: '退出',
+      click: () => {
+        app.quit();
+      }
+    },
+  ]);
+}
 
 // Remove electron security warnings
 // This warning only shows in development mode
@@ -64,7 +94,7 @@ async function createWindow() {
       // nodeIntegration: true,
       // contextIsolation: false,
       preload,
-      devTools: isDevelopment,
+      devTools: true,
       // // 添加安全相关配置
       // sandbox: false,
       // webSecurity: true
@@ -101,6 +131,24 @@ async function createWindow() {
     return { action: 'deny' }
   })
 
+  win.webContents.on('devtools-opened', () => {
+    const bounds = win!.getBounds();
+    win!.setBounds({
+      ...bounds,
+      width: 1500
+    });
+    setWindowPositionBelowTray();
+  });
+  
+  win.webContents.on('devtools-closed', () => {
+    const bounds = win!.getBounds();
+    win!.setBounds({
+      ...bounds,
+      width: 500 // 这里改成你想要的默认宽度
+    });
+    setWindowPositionBelowTray();
+  });
+
   // Apply electron-updater
   update(win)
 }
@@ -120,40 +168,6 @@ function createTray() {
   const resizedIcon = icon.resize({ width: 18, height: 18 });
   tray = new Tray(resizedIcon);
   
-  tray.setToolTip('Test Webview');
-  
-  // 添加右键菜单
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: `当前版本: ${app.getVersion()}(检查更新)`,
-      click: () => {
-        // 打开 GitHub 仓库的 releases 页面
-        const repoUrl = 'https://github.com/zhy19950705/web-plugin/releases';
-        shell.openExternal(repoUrl);
-      }
-    },
-    {
-      label: '打开开发者工具',
-      click: () => {
-        if (win) {
-          win.webContents.openDevTools();
-          // 调整窗口宽度为1500
-          const bounds = win.getBounds();
-          win.setBounds({
-            ...bounds,
-            width: 1500
-          });
-        }
-      }
-    },
-    {
-      label: '退出',
-      click: () => {
-        app.quit();
-      }
-    },
-  ]);
-
   // 为 macOS 优化的点击处理
   const toggleWindow = () => {
     if (!win) return;
@@ -168,14 +182,7 @@ function createTray() {
       win.removeListener('blur', hideWindow);
     } else {
       // 在 macOS 上，将窗口定位到托盘图标下方
-      const trayBounds = tray?.getBounds();
-      if (trayBounds) {
-        const windowBounds = win.getBounds();
-        win.setPosition(
-          Math.round(trayBounds.x + (trayBounds.width / 2) - (windowBounds.width / 2)),
-          Math.round(trayBounds.y + trayBounds.height)
-        );
-      }
+      setWindowPositionBelowTray();
       win.show();
       windowState.isVisible = true;
       // 添加点击事件监听器
@@ -198,7 +205,7 @@ function createTray() {
   
   // 右键点击：显示菜单
   tray.on('right-click', () => {
-    tray?.popUpContextMenu(contextMenu);
+    tray?.popUpContextMenu(getContextMenu());
   });
 }
 
@@ -255,4 +262,14 @@ ipcMain.handle('open-win', (_, arg) => {
 ipcMain.handle('handle-login', async (_, args) => {
    login(args);
 });
+
+function setWindowPositionBelowTray() {
+  if (!win || !tray) return;
+  const trayBounds = tray.getBounds();
+  const windowBounds = win.getBounds();
+  win.setPosition(
+    Math.round(trayBounds.x + (trayBounds.width / 2) - (windowBounds.width / 2)),
+    Math.round(trayBounds.y + trayBounds.height)
+  );
+}
 

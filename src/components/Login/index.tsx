@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Button, Tree, Tag, Popconfirm, Modal, Form, Input, Select, message, Dropdown } from 'antd';
-import { EditOutlined, DeleteOutlined, ChromeOutlined, CompassOutlined, GlobalOutlined } from '@ant-design/icons';
+import { Button, Tree, Popconfirm, Modal, Form, Input, Select, message, Dropdown } from 'antd';
+import { EditOutlined, DeleteOutlined, ChromeOutlined, CompassOutlined, GlobalOutlined, CopyOutlined } from '@ant-design/icons';
 import type { FormInstance } from 'antd/es/form';
 import './index.css';
 import login from './login';
@@ -52,13 +52,15 @@ const Login: React.FC = () => {
     const browsers = [
         { label: 'Chrome', value: 'Google Chrome', icon: <ChromeOutlined style={{ color: '#4285F4' }} /> },
         { label: 'Firefox', value: 'Firefox', icon: <GlobalOutlined style={{ color: '#FF7139' }} /> },
-        { label: 'Arc', value: 'Arc', icon: <GlobalOutlined style={{ color: '#5B21B6' }} /> },
-        { label: 'Edge', value: 'Edge', icon: <GlobalOutlined style={{ color: '#0078D7' }} /> },
         { label: 'Safari', value: 'Safari', icon: <CompassOutlined style={{ color: '#006CFF' }} /> },
+        { label: 'Arc', value: 'Arc', icon: <GlobalOutlined style={{ color: '#5B21B6' }} /> },
     ];
 
     const addAccount = () => {
         setCreateVisible(true);
+        form.setFieldsValue({
+            browser: 'Google Chrome'
+        })
     };
 
     const onClose = () => {
@@ -116,6 +118,23 @@ const Login: React.FC = () => {
             console.error('Validation failed:', error);
         }
     };
+
+    const copyAccount = (record: AccountData) => {
+        navigator.clipboard.writeText(JSON.stringify(record));
+        message.success('账号数据已成功复制到剪贴板');
+    };
+
+    const onImportAccount = () => {
+        navigator.clipboard.readText().then(text => {
+            try {
+                const importData = JSON.parse(text);
+                form.setFieldsValue(importData)
+                setCreateVisible(true)
+            } catch (e) {
+                message.error('导入账号格式错误，请确保是有效的JSON格式');
+            }
+        });
+    }
 
     const editAccount = (record: AccountData) => {
         setAccountInfo(record);
@@ -239,17 +258,17 @@ const Login: React.FC = () => {
         }));
 
         return (
-            <Dropdown menu={{ items }} placement="bottomRight">
-                <Tag color="blue" style={{ cursor: 'pointer' }} onClick={() => prodLogin(record)}>
-                    <ChromeOutlined /> 登录
-                </Tag>
-            </Dropdown>
+            <Dropdown.Button menu={{ items }} placement="bottomRight" size="small">
+                <div onClick={() => prodLogin(record, record.browser)}>
+                    {browsers.find(browser => browser.value === record.browser)?.icon} 登录
+                </div>
+            </Dropdown.Button>
         );
     };
 
     return (
         <div className="login">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: 10 }}>
                 <div className="header-left">
                     <span>账号列表</span>
                     <Button type="primary" onClick={addAccount} size="small" style={{ marginLeft: 10 }}>
@@ -257,8 +276,17 @@ const Login: React.FC = () => {
                     </Button>
                 </div>
                 <div className="header-right">
-                    <Button type="text" onClick={importAccounts} size="small" style={{ marginLeft: 10 }}>导入</Button>
-                    <Button type="text" onClick={exportAccounts} size="small" style={{ marginLeft: 10 }}>导出</Button>
+                    <Dropdown.Button menu={{ items: [{
+                        key: 'import',
+                        label: '批量导入',
+                        onClick: importAccounts
+                    }, {
+                        key: 'export',
+                        label: '批量导出',
+                        onClick: exportAccounts
+                    }] }}>
+                        <div onClick={onImportAccount}>从剪切板导入</div>
+                    </Dropdown.Button>
                 </div>
             </div>
 
@@ -275,9 +303,12 @@ const Login: React.FC = () => {
                         return (
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr 1fr', gridGap: 12 }}>
                                 <div>{nodeData.domain}</div>
-                                <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nodeData.loginId}</div>
+                                <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {nodeData.loginId}
+                                </div>
                                 <div style={{ display: 'flex', gap: '8px' }}>
                                     {renderLoginDropdown(nodeData)}
+                                    <CopyOutlined style={{ cursor: 'pointer' }} onClick={() => copyAccount(nodeData)} />
                                     <EditOutlined style={{ cursor: 'pointer' }} onClick={() => editAccount(nodeData)} />
                                     <Popconfirm
                                         title="确定要删除这个账号吗？"
@@ -295,7 +326,7 @@ const Login: React.FC = () => {
 
                 <Modal
                     open={createVisible}
-                    title="添加账号"
+                    title={accountInfo ? "编辑账号" : "添加账号"}
                     onCancel={onClose}
                     onOk={onConfirm}
                     width="80%"
@@ -311,7 +342,7 @@ const Login: React.FC = () => {
                             name="env"
                             rules={[{ required: true, message: '请输入环境' }]}
                         >
-                            <Input placeholder="demo(区分用)" />
+                            <Input placeholder="demo(区分用)" disabled={!!accountInfo} />
                         </Form.Item>
 
                         <Form.Item
@@ -319,7 +350,7 @@ const Login: React.FC = () => {
                             name="domain"
                             rules={[{ required: true, message: '请输入域名' }]}
                         >
-                            <Input placeholder="guanbi" />
+                            <Input placeholder="guanbi" disabled={!!accountInfo} />
                         </Form.Item>
 
                         <Form.Item
@@ -327,7 +358,7 @@ const Login: React.FC = () => {
                             name="loginId"
                             rules={[{ required: true, message: '请输入账号' }]}
                         >
-                            <Input placeholder="admin" />
+                            <Input placeholder="admin" disabled={!!accountInfo} />
                         </Form.Item>
 
                         <Form.Item
@@ -343,14 +374,14 @@ const Login: React.FC = () => {
                             name="url"
                             rules={[{ required: true, message: '请输入登录地址' }]}
                         >
-                            <Input placeholder="（不要带/后缀）https://demo.guandata.com" />
+                            <Input placeholder="（不要带/后缀，例如：https://demo.guandata.com）" />
                         </Form.Item>
 
                         <Form.Item
                             label="browser"
                             name="browser"
                         >
-                            <Select placeholder="请选择浏览器" options={browsers} />
+                            <Select placeholder="请选择默认打开浏览器" options={browsers} />
                         </Form.Item>
                     </Form>
                 </Modal>

@@ -1,6 +1,6 @@
 {
   "name": "web-plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "dist-electron/main/index.js",
   "description": "Electron Vite React boilerplate.",
   "author": "张晗宇",
@@ -18,8 +18,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "cross-env TS_NODE_TRANSPILE_ONLY=true vite build && electron-builder",
-    "publish": "cross-env TS_NODE_TRANSPILE_ONLY=true vite build && electron-forge publish",
+    "build": "cross-env TS_NODE_TRANSPILE_ONLY=true vite build && electron-builder --mac --config --publish always",
     "preview": "vite preview",
     "pree2e": "vite build --mode=test",
     "e2e": "playwright test"
@@ -30,7 +29,6 @@
     "update-electron-app": "^3.1.1"
   },
   "devDependencies": {
-    "@electron-forge/publisher-github": "^7.8.0",
     "@playwright/test": "^1.37.1",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
